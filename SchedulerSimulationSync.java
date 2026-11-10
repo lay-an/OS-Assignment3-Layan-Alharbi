@@ -65,25 +65,40 @@ class SharedStats {
     // Think about it: ONE lock for the three variables, or ONE lock PER variable? (you must justify it in MY_WORK.md)
 
     public static void incrementContextSwitch() {
-        // TODO Feature 2: protect this critical section
-        int tmp = contextSwitchCount;       // 1) read
-        RaceWindow.pause();                 //    <- another thread can read the SAME value here
-        contextSwitchCount = tmp + 1;       // 2) write  (one increment is lost if someone else did the same)
+        statsLock.lock();
+        try {
+            int tmp = contextSwitchCount;
+            RaceWindow.pause();
+            contextSwitchCount = tmp + 1;
+        } finally {
+            statsLock.unlock();
+        }
     }
 
     public static void incrementCompletedProcess() {
-        // TODO Feature 2: protect this critical section
-        int tmp = completedProcessCount;
-        RaceWindow.pause();
-        completedProcessCount = tmp + 1;
+        statsLock.lock();
+        try {
+            int tmp = completedProcessCount;
+            RaceWindow.pause();
+            completedProcessCount = tmp + 1;
+        } finally {
+            statsLock.unlock();
+        }
+    }
+    
+    public static void addServiceTime(int ms) {
+        statsLock.lock();
+        try {
+            // TODO Feature 2: protect this critical section
+            long tmp = totalServiceTime;
+            RaceWindow.pause();
+            totalServiceTime = tmp + ms;
+        } finally {
+            statsLock.unlock();
+        }
     }
 
-    public static void addServiceTime(int ms) {
-        // TODO Feature 2: protect this critical section
-        long tmp = totalServiceTime;
-        RaceWindow.pause();
-        totalServiceTime = tmp + ms;
-    }
+
 
     // Readers must also be protected (a read in the middle of an update is not safe either)
     public static int getCompletedProcessCount() {
@@ -114,46 +129,71 @@ class ReadyQueue {
     // TODO Feature 3: declare the counting semaphore that counts the processes waiting in the ready queue here
 
     // Add a process to the ready queue (new process, or a process that did not finish its quantum)
-    public void add(Process process) {
-        // TODO Feature 1: protect this critical section
-        Thread thread = new Thread(process);
-        list.add(thread);
-        map.put(thread, process);
+            public void add(Process process) {
+            // TODO Feature 1: protect this critical section
+            readyQueueLock.lock();
+            try {
+                Thread thread = new Thread(process);
+                list.add(thread);
+                map.put(thread, process);
+            } finally {
+                readyQueueLock.unlock();
+            }
 
-        // TODO Feature 3: signal that one more process is available in the queue
+            // TODO Feature 3: signal that one more process is available
+            readySemaphore.release();
 
-        System.out.println(Colors.BLUE + "  ➕ " + Colors.BOLD + Colors.CYAN + process.getName() + Colors.RESET +
-                Colors.BLUE + " (Priority: " + process.getPriority() + ") added to ready queue" + Colors.RESET +
-                " │ Remaining: " + Colors.YELLOW + process.getRemainingTime() + "ms" + Colors.RESET +
-                " of " + process.getBurstTime() + "ms");
-    }
+            System.out.println(Colors.BLUE + "+" + Colors.BOLD + Colors.BLUE + 
+                " (Priority: " + process.getPriority() + " | Remaining: " + process.getRemainingBurstTime() + 
+                " of " + process.getBurstTime() + "ms)");
+        }
+
 
     // Remove and return the thread at the head of the queue (or null if the queue is empty)
-    public Thread poll() {
-        // TODO Feature 1: protect this critical section
-        if (list.isEmpty()) {
-            return null;
+        public Thread poll() {
+        readyQueueLock.lock();
+        try {
+            // TODO Feature 1: protect this critical section
+            if (list.isEmpty()) {
+                return null;
+            }
+            Thread head = list.getFirst();
+            RaceWindow.pause();
+            list.removeFirst();
+            return head;
+        } finally {
+            readyQueueLock.unlock();
         }
-        Thread head = list.getFirst();      // 1) read the head of the queue
-        RaceWindow.pause();                 //    <- another CPU can read the SAME head here
-        list.removeFirst();                 // 2) remove the head (it may be a different thread by now!)
-        return head;
     }
 
-    public Process processOf(Thread thread) {
-        // TODO Feature 1: protect this access
-        return map.get(thread);
+
+        public Process processOf(Thread thread) {
+        readyQueueLock.lock();
+        try {
+            // TODO Feature 1: protect this access
+            return map.get(thread);
+        } finally {
+            readyQueueLock.unlock();
+        }
     }
+
 
     // Names of the processes currently waiting in the queue (used to display the ready queue)
-    public String snapshot() {
-        // TODO Feature 1: protect this critical section
-        StringBuilder sb = new StringBuilder();
-        for (Thread t : list) {
-            if (sb.length() > 0) sb.append(" → ");
-            sb.append(map.get(t).getName());
+        public String snapshot() {
+        readyQueueLock.lock();
+        try {
+            // TODO Feature 1: protect this critical section
+            StringBuilder sb = new StringBuilder();
+            for (Thread t : list) {
+                if (sb.length() > 0) sb.append(" -> ");
+                sb.append(map.get(t).getName());
+            }
+            return sb.length() == 0 ? "empty" : sb.toString();
+        } finally {
+            readyQueueLock.unlock();
         }
-        return sb.length() == 0 ? "empty" : sb.toString();
+    }
+
     }
 }
 
