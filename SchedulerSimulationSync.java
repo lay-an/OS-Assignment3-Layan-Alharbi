@@ -4,8 +4,9 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Random;
-// TODO (Feature 1 and Feature 2): import java.util.concurrent.locks.ReentrantLock;
-// TODO (Feature 3):               import java.util.concurrent.Semaphore;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.Semaphore;
+
 
 // ANSI Color Codes for enhanced terminal output (same as Assignment 1)
 class Colors {
@@ -298,6 +299,13 @@ class CpuWorker extends Thread {
 }
 
 public class SchedulerSimulationSync {
+        // TODO (Feature 1 & Feature 2): ReentrantLocks for synchronization
+    private static final ReentrantLock readyQueueLock = new ReentrantLock();
+    private static final ReentrantLock statsLock = new ReentrantLock();
+
+    // TODO (Feature 3): Semaphore to eliminate busy waiting
+    private static final Semaphore readySemaphore = new Semaphore(0);
+
     public static void main(String[] args) {
         // ⚠️ IMPORTANT: Put your student ID here to seed the random number generator
         // This makes your output unique to you - DO NOT forget to change this!
