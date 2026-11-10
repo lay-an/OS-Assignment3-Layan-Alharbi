@@ -32,11 +32,12 @@
 
 | Field | Your Answer |
 |-------|-------------|
-| **Full Name** | [Write your full name here] |
-| **Student ID** | [Write your student ID here] |
-| **University Email** | [yourid]@std.psau.edu.sa |
-| **GitHub Username** | [your-github-username] |
-| **Repository Link** | [Paste your repository link here] |
+| **Full Name** | ليان ضيف الله الحربي |
+| **Student ID** | 448540127 |
+| **University Email** | 448540127@std.psau.edu.sa |
+| **GitHub Username** | lay-an |
+| **Repository Link** | https://github.com/lay-an/OS-Assignment3-Layan-Alharbi |
+
  
 ---
 
